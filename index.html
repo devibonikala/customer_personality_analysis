@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Clustering Prediction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0c0101, #fad0c4);
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            display: flex;
+            justify-content: left;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .navbar a:hover {
+            background: #ff4757;
+            border-radius: 5px;
+        }
+
+        /* Spacing for fixed navbar */
+        .content {
+            padding-top: 60px;
+        }
+
+        /* Shining Gradient Heading with Icon */
+        h1 {
+           font-size: 32px;
+           font-weight: 700;
+           text-transform: uppercase;
+           margin-bottom: 10px;
+           background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+           display: inline-block;
+        }
+
+        h1 i {
+            color: #ff4757;
+            margin-right: 10px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        label {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            background: #ff6b81;
+        }
+
+        .result-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f5f8;
+            text-align: left;
+        }
+
+        .cluster-details {
+            margin-top: 15px;
+        }
+
+        .cluster-item {
+            background: #ffe4e1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .image-section img {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        /* Logging Section */
+        .log-container {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f4f4f4;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .log-item {
+            background: #fad0c4;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <a href="#home">Home</a>
+        <a href="#upload">Upload File</a>
+        <a href="#results">Results</a>
+         <a href="#logSection">Logs</a>
+    </div>
+
+    <div class="content">
+        <!-- Home Section -->
+        <h1 id="home"><i class="fas fa-user-circle"></i> Customer Clustering Prediction</h1>
+
+        <!-- Image Section -->
+        <div class="image-section">
+            <img src="{{ url_for('static', filename='ved2.jpg') }}" alt="Customer Analysis">
+        </div>
+
+        <!-- Upload Form -->
+        <div id="upload" class="container">
+            <div class="form-container">
+                <form action="/predict" method="post" enctype="multipart/form-data">
+                    <label for="fileInput">Choose CSV File:</label>
+                    <input type="file" id="fileInput" name="fileInput" accept=".csv" required>
+                    <button type="submit">Upload and Predict</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Prediction Results -->
+        <div id="results" class="container result-container">
+            <p><strong>Prediction Result:</strong></p>
+            <pre id="predictionResult">Please upload a CSV file to get the predicted clusters.</pre>
+            <div id="clusterDetails" class="cluster-details"></div>
+        </div>
+
+        <!-- Logging Section -->
+        <div class="log-container" id="logSection">
+            <p><strong>Logs:</strong></p>
+            <div class="log-item" id="logItem">No logs yet.</div>
+        </div>
+    </div>
+
+    <script>
+    // Smooth scrolling for navigation
+    document.querySelectorAll('.navbar a').forEach(anchor => {
+        anchor.addEventListener('click', function(event) {
+            event.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            document.getElementById(targetId).scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
+    document.querySelector('form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        var formData = new FormData(this);
+
+        document.getElementById('predictionResult').innerHTML = "Processing... Please wait.";
+        document.getElementById('clusterDetails').innerHTML = "";
+
+        // Logging file upload
+        logMessage('File uploaded, predicting clusters...');
+
+        fetch('/predict', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json()) 
+        .then(data => {
+            if (data.error) {
+                document.getElementById('predictionResult').innerHTML = `Error: ${data.error}`;
+                logMessage(`Error: ${data.error}`);
+                return;
+            }
+
+            let clusters = data.clusters;
+            if (!Array.isArray(clusters) || clusters.length === 0) {
+                document.getElementById('predictionResult').innerHTML = "No valid clusters predicted.";
+                logMessage('No clusters predicted.');
+                return;
+            }
+
+            document.getElementById('predictionResult').innerHTML = `Predicted Clusters: ${JSON.stringify(clusters)}`;
+            logMessage(`Predicted Clusters: ${JSON.stringify(clusters)}`);
+
+            let clusterDetailsHtml = '';
+            clusters.forEach((cluster, index) => {
+                clusterDetailsHtml += `
+                    <div class="cluster-item">
+                        <p><strong>Customer ${index + 1}:</strong> Cluster ${cluster}</p>
+                        <p><strong>Personality:</strong> ${getPersonalityTrait(cluster)}</p>
+                    </div>
+                `;
+            });
+
+            document.getElementById('clusterDetails').innerHTML = clusterDetailsHtml;
+        })
+        .catch(error => {
+            console.error("Prediction Error:", error);
+            document.getElementById('predictionResult').innerHTML = `Error: Could not process the prediction.`;
+            logMessage(`Error: Could not process the prediction.`);
+        });
+    });
+
+    function getPersonalityTrait(cluster) {
+        const personalityTraits = {
+            0: "Confident Customer - Prefers premium brands & quick decision-maker.",
+            1: "Cautious Customer - Price-sensitive, reads reviews before buying.",
+            2: "Adventurous Customer - Loves new trends, enjoys exploring new brands.",
+            3: "Balanced Customer - Mixes budget & luxury purchases.",
+            4: "Impulsive Buyer - Attracted by discounts & one-time offers.",
+            5: "Loyal Customer - Repeats purchases from the same brand."
+        };
+        return personalityTraits[cluster] || "Unknown Personality - No behavior assigned.";
+    }
+
+    function logMessage(message) {
+        const logItem = document.createElement('div');
+        logItem.classList.add('log-item');
+        logItem.textContent = message;
+
+        const logSection = document.getElementById('logSection');
+        logSection.appendChild(logItem);
+    }
+    </script>
+
+</body>
+</html>
